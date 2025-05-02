@@ -1,8 +1,68 @@
-import React, { useState } from 'react'
+import React, { useState,useRef } from 'react'
 import Header from './Header'
-
+import { checkValidData } from '../utils/validate';
+import {  createUserWithEmailAndPassword ,signInWithEmailAndPassword, updateProfile} from "firebase/auth";
+import {auth} from "../utils/firebase";
+import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { addUser } from '../utils/userSlice';
+import { LOGO, USER_AVATAR } from '../utils/constants';
 const Login = () => {
   const[isSignInForm,setSignInForm]=useState(true);
+  const [errorMessage,setErrorMessage]=useState(null);
+  const navigate=useNavigate();
+  const dispatch=useDispatch();
+  const name=useRef(null);
+  const email=useRef(null);
+  const password=useRef(null);
+  const handleButtonClick=() =>{
+    
+   const message= checkValidData(email.current.value,password.current.value);
+   setErrorMessage(message);
+    if(message) return;
+
+    if(!isSignInForm){
+      createUserWithEmailAndPassword(auth, email.current.value,password.current.value)
+  .then((userCredential) => {
+    // Signed up 
+    const user = userCredential.user;
+    updateProfile(user, {
+      displayName: name.current.value, photoURL: USER_AVATAR
+    }).then(() => { 
+      const {uid, email,displayName} = auth.currentUser;
+              dispatch(addUser({
+                uid:uid,email:email,displayName:displayName
+              }));
+      
+    }).catch((error) => {
+     setErrorMessage(error.message);
+    });
+    
+  
+    
+    // ...
+  })
+  .catch((error) => {
+    const errorCode = error.code;
+    const errorMessage = error.message;
+    setErrorMessage(errorCode+"-"+errorMessage);
+    // ..
+  });
+    }else{
+      signInWithEmailAndPassword(auth, email.current.value,password.current.value)
+  .then((userCredential) => {
+    // Signed in 
+    const user = userCredential.user;
+    
+    // ...
+  })
+  .catch((error) => {
+    const errorCode = error.code;
+    const errorMessage = error.message;
+    setErrorMessage(errorCode+"-"+errorMessage);
+  });
+    }
+  }
   const toggleSignInForm=()=>{
       setSignInForm(!isSignInForm);
   }
@@ -10,18 +70,20 @@ const Login = () => {
     <div>
       <Header/>
       <div className='absolute'>
-        <img src='https://assets.nflxext.com/ffe/siteui/vlv3/98df3030-1c2b-4bd1-a2f5-13c611857edb/web/IN-en-20250331-TRIFECTA-perspective_247b6f06-c36d-4dff-a8eb-4013325c3f8e_small.jpg' alt="login background"/>
+        <img src={LOGO} alt="login background"/>
       </div>
-      <form className='absolute w-3/12 p-12 bg-black my-36 mx-auto right-0 left-0 text-white rounded-lg bg-opacity-80'>
+      <form onSubmit={(e)=>e.preventDefault()}
+       className='absolute w-3/12 p-12 bg-black my-36 mx-auto right-0 left-0 text-white rounded-lg bg-opacity-80'>
         <h1 className='font-bold text-3xl py-4'> {isSignInForm?"Sign In":"Sign Up"}</h1>
-        {!isSignInForm && <input type="text" placeholder='Full Name' 
-        className='border-2 border-black rounded-md p-2 my-4 w-full'/>}
-        <input type="email" placeholder='Email' 
-        className='border-2 border-black rounded-md p-2 my-4 w-full'/>
-        <input type="password" placeholder='Password' 
-        className='border-2 border-black rounded-md p-2 my-4 w-full'/>
+        {!isSignInForm && <input ref={name} type="text" placeholder='Full Name' 
+        className='border-2 border-black rounded-md p-2 my-4 w-full text-black'/>}
+        <input ref={email} type="email" placeholder='Email' 
+        className='border-2 border-black rounded-md p-2 my-4 w-full text-black'/>
+        <input ref={password} type="password" placeholder='Password' 
+        className='border-2 border-black rounded-md p-2 my-4 w-full text-black'/>
+        <p className='text-red-500 font-bold text-lg py-'>{errorMessage}</p>
         <button 
-        className='bg-red-600 text-white rounded-md p-2 my-6 w-full'>{isSignInForm?"Sign In":"Sign Up"}</button>
+        className='bg-red-600 text-white rounded-md p-2 my-6 w-full' onClick={handleButtonClick}>{isSignInForm?"Sign In":"Sign Up"}</button>
         <p className='py-4 cursor-pointer' onClick={toggleSignInForm}>{isSignInForm?"New to Netflix? Sign Up Now":"Already registered? Sign In Now"}</p>    
       </form>
     </div>
