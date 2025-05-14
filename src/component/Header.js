@@ -4,12 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { auth } from '../utils/firebase';
 import {  useDispatch, useSelector } from 'react-redux';
 import { addUser, removeUser } from '../utils/userSlice';
+import { toggleGptSearchView } from '../utils/gptSlice';
 
 
 const Header = () => {
   const navigate=useNavigate();
   const dispatch=useDispatch();
   const user=useSelector((store) => store.user);
+  const showGptSearch= useSelector((store) => store.gpt.showGptSearch)
   const handleSignOut = () => {
     
   signOut(auth).then(() => {
@@ -39,6 +41,11 @@ const Header = () => {
     });
   }, []);
 
+  const handleGptSearchClick= () => {
+    // toggle the GPT search 
+    dispatch(toggleGptSearchView());
+  }
+
   return (
     <div className="flex justify-between items-center absolute px-8 py-2 bg-gradient-to-b from-black z-10 w-screen">
       
@@ -50,6 +57,8 @@ const Header = () => {
 
       
       {user && (<div className="flex items-center gap-4">
+        <button className='py-2 px-4 mx-4 my-2 bg-purple-500 text-white rounded-lg'
+        onClick={handleGptSearchClick}>{showGptSearch? "Homepage" :"GPT Search"}</button>
         <img
           className=" account-logo w-10 h-10 rounded-md border border-white"
           src="https://wallpapers.com/images/hd/netflix-profile-pictures-1000-x-1000-qo9h82134t9nv0j0.jpg"
